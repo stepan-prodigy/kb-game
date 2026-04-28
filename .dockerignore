@@ -1,0 +1,27 @@
+# Build context exclusions for the kb-game qmd image.
+# The Dockerfile only COPYs ./knowledge and ./skills, so most repo-level
+# files are out of context by default. This file mainly trims items inside
+# those trees that aren't part of the searchable text.
+
+# Arcs and reviews are PROPOSALS, not facts — never indexed.
+# (Defense in depth: the Dockerfile only registers reference/ as collections,
+# but excluding them from build context keeps image size honest.)
+skills/*/arcs/
+skills/*/reviews/
+
+# Binaries (if added later, e.g. design mocks). qmd indexes text only.
+knowledge/attachments/
+
+# Git metadata.
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Editor / OS noise.
+.DS_Store
+.idea/
+.vscode/
+*.swp
+__pycache__/
+*.pyc

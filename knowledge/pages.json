@@ -1,0 +1,13 @@
+[
+  {
+    "file": "event-schemas/example_progression_event.md",
+    "title": "Example Progression Event Schema",
+    "type": "event-schema",
+    "category": "event-schemas",
+    "owner": "data-team",
+    "last_modified": "2026-04-28",
+    "status": "draft",
+    "related": [],
+    "summary": "Game progression events capture player movement through the core loop: starting an activity, advancing through it, and completing or abandoning it. They are the backbone of retention and engagement analytics."
+  }
+]

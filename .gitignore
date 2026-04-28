@@ -1,0 +1,13 @@
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+
+# Build artifacts
+*.zip
+extracted/
