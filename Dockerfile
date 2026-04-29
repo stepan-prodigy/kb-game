@@ -115,10 +115,18 @@ RUN ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd
 # Model cache layer (kept separate so doc-only rebuilds skip re-pulling weights).
 COPY --from=index --chown=qmd:qmd /home/qmd/.cache/qmd/models /home/qmd/.cache/qmd/models
 
-# Index + corpus. qmd 2.1.0 stores collection metadata inside index.sqlite —
-# there is no separate collections.json. We copy the full skills/ tree
-# (including arcs/ and reviews/) so they are filesystem-readable from inside
-# the container even though only reference/ is indexed.
+# qmd 2.1.0 stores collection state in two places: SQLite (store_collections
+# table inside index.sqlite) AND a YAML config under ~/.config/qmd/. The CLI
+# commands `collection list`, `collection show`, `collection remove`, and the
+# `--collection` query/search flag all resolve names via the YAML; without it
+# they report "Collection not found" even though search-by-default works
+# against the DB. The MCP server tolerates the missing YAML, but copying it
+# keeps the CLI usable for ops/debug from inside the container.
+COPY --from=index --chown=qmd:qmd /home/qmd/.config /home/qmd/.config
+
+# Index + corpus. We copy the full skills/ tree (including arcs/ and
+# reviews/) so they are filesystem-readable from inside the container even
+# though only reference/ is indexed.
 COPY --from=index --chown=qmd:qmd /home/qmd/.cache/qmd/index.sqlite /home/qmd/.cache/qmd/index.sqlite
 COPY --from=index --chown=qmd:qmd /home/qmd/knowledge /home/qmd/knowledge
 COPY --from=index --chown=qmd:qmd /home/qmd/skills /home/qmd/skills
