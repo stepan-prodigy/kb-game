@@ -112,6 +112,23 @@ RUN apt-get update \
 COPY --from=base /usr/local/lib/node_modules/@tobilu /usr/local/lib/node_modules/@tobilu
 RUN ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd
 
+# Local-test workaround: qmd 2.1.0 hardcodes inactivityTimeoutMs=5*60*1000 in
+# dist/index.js, with no env override. On CPU hosts, rerank's rankAll() can
+# exceed 5 min for queries with enough rerank candidates, causing the
+# inactivity timer to dispose the rerank context mid-call →
+# DisposedError("Object is disposed"). This patch bumps the constant to 30
+# min so the timer doesn't race rerank while we test functionality + content
+# shape locally. See proposals/qmd-rerank-disposal-investigation.md.
+#
+# Sunset: remove this patch once qmd upstream wraps rerank() in
+# withLLMSession() (tracked in KB_PENDING.md). The trailing grep -q makes
+# the build fail loudly if a future qmd release moves or rephrases the
+# constant — that's the cue to delete the patch.
+RUN sed -i 's/inactivityTimeoutMs: 5 \* 60 \* 1000/inactivityTimeoutMs: 30 * 60 * 1000/' \
+        /usr/local/lib/node_modules/@tobilu/qmd/dist/index.js \
+ && grep -q 'inactivityTimeoutMs: 30 \* 60 \* 1000' \
+        /usr/local/lib/node_modules/@tobilu/qmd/dist/index.js
+
 # Model cache layer (kept separate so doc-only rebuilds skip re-pulling weights).
 COPY --from=index --chown=qmd:qmd /home/qmd/.cache/qmd/models /home/qmd/.cache/qmd/models
 
