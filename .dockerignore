@@ -9,6 +9,15 @@
 skills/*/arcs/
 skills/*/reviews/
 
+# Session-level retrospectives (process meta, not corpus).
+sessions/
+
+# Per-section refresh proposals + investigation reports (drafts pending PR).
+proposals/
+
+# Eval reports (run output, not corpus).
+evals/
+
 # Binaries (if added later, e.g. design mocks). qmd indexes text only.
 knowledge/attachments/
 

@@ -112,13 +112,38 @@ RUN apt-get update \
 COPY --from=base /usr/local/lib/node_modules/@tobilu /usr/local/lib/node_modules/@tobilu
 RUN ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd
 
+# Local-test workaround: qmd 2.1.0 hardcodes inactivityTimeoutMs=5*60*1000 in
+# dist/index.js, with no env override. On CPU hosts, rerank's rankAll() can
+# exceed 5 min for queries with enough rerank candidates, causing the
+# inactivity timer to dispose the rerank context mid-call →
+# DisposedError("Object is disposed"). This patch bumps the constant to 30
+# min so the timer doesn't race rerank while we test functionality + content
+# shape locally. See proposals/qmd-rerank-disposal-investigation.md.
+#
+# Sunset: remove this patch once qmd upstream wraps rerank() in
+# withLLMSession() (tracked in KB_PENDING.md). The trailing grep -q makes
+# the build fail loudly if a future qmd release moves or rephrases the
+# constant — that's the cue to delete the patch.
+RUN sed -i 's/inactivityTimeoutMs: 5 \* 60 \* 1000/inactivityTimeoutMs: 30 * 60 * 1000/' \
+        /usr/local/lib/node_modules/@tobilu/qmd/dist/index.js \
+ && grep -q 'inactivityTimeoutMs: 30 \* 60 \* 1000' \
+        /usr/local/lib/node_modules/@tobilu/qmd/dist/index.js
+
 # Model cache layer (kept separate so doc-only rebuilds skip re-pulling weights).
 COPY --from=index --chown=qmd:qmd /home/qmd/.cache/qmd/models /home/qmd/.cache/qmd/models
 
-# Index + corpus. qmd 2.1.0 stores collection metadata inside index.sqlite —
-# there is no separate collections.json. We copy the full skills/ tree
-# (including arcs/ and reviews/) so they are filesystem-readable from inside
-# the container even though only reference/ is indexed.
+# qmd 2.1.0 stores collection state in two places: SQLite (store_collections
+# table inside index.sqlite) AND a YAML config under ~/.config/qmd/. The CLI
+# commands `collection list`, `collection show`, `collection remove`, and the
+# `--collection` query/search flag all resolve names via the YAML; without it
+# they report "Collection not found" even though search-by-default works
+# against the DB. The MCP server tolerates the missing YAML, but copying it
+# keeps the CLI usable for ops/debug from inside the container.
+COPY --from=index --chown=qmd:qmd /home/qmd/.config /home/qmd/.config
+
+# Index + corpus. We copy the full skills/ tree (including arcs/ and
+# reviews/) so they are filesystem-readable from inside the container even
+# though only reference/ is indexed.
 COPY --from=index --chown=qmd:qmd /home/qmd/.cache/qmd/index.sqlite /home/qmd/.cache/qmd/index.sqlite
 COPY --from=index --chown=qmd:qmd /home/qmd/knowledge /home/qmd/knowledge
 COPY --from=index --chown=qmd:qmd /home/qmd/skills /home/qmd/skills
