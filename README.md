@@ -25,7 +25,8 @@ kb-game/
 │       └── reviews/            ← weekly review notes (NOT indexed)
 │
 ├── tools/
-│   └── build_index.py          ← regenerates knowledge/INDEX.md + pages.json
+│   ├── build_index.py          ← regenerates knowledge/INDEX.md + pages.json
+│   └── install-skills.sh       ← symlink kb-game skills into ~/.claude/skills/
 │
 ├── tests/
 │   └── mcp-smoke.sh            ← smokes the image's stdio MCP surface
@@ -107,6 +108,20 @@ docker build -t kb-game:dev .
 ```
 
 Restart Claude Code. The `query` / `get` / `multi_get` / `status` tools appear under the `kb-game` server in `/mcp`.
+
+### 3. Install the skills (optional — for slash-command workflows)
+
+Skills like `/draft-ddd` are markdown prompt files under `skills/<name>/`. Claude Code finds them by walking `~/.claude/skills/`. Run the installer to symlink kb-game's skills into that directory:
+
+```sh
+tools/install-skills.sh             # installs ddd-drafting (default)
+tools/install-skills.sh --all       # all skills, including operator skills
+tools/install-skills.sh --uninstall # remove kb-game's symlinks (other skills untouched)
+```
+
+Restart Claude Code afterward. Symlinks mean `git pull` updates the skills automatically — no re-install needed.
+
+By default only `ddd-drafting` is installed. The other three (`arc-review`, `kb-refresh`, `kb-eval`) are operator/maintainer skills — useful when you're maintaining kb-game itself, not when consuming it. Pass `--all` to install them too.
 
 ### Tools exposed
 
